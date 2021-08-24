@@ -21,4 +21,3 @@ Wubing Zhang,
 ## Contacts
 * Wubing Zhang (wzhang@ds.dfci.harvard.edu)
 * X. Shirley Liu (xsliu@ds.dfci.harvard.edu)
-* Collin Tokheim (ctokheim@ds.dfci.harvard.edu)
