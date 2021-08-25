@@ -1,0 +1,17 @@
+Package: MAPD
+Type: Package
+Title: Model-based Analysis of Protein Degradability
+Version: 1.0.0
+Author: Wubing Zhang
+Maintainer: Wubing Zhang <watson5bzhang@gmail.com>
+Description: MAPD predicts protein degradability from protein intrinsic features (e.g. ubiquitination potential).
+License: GPL (>=3)
+VignetteBuilder: knitr
+Encoding: UTF-8
+LazyData: true
+Depends: R (>= 3.5)
+Imports: caret, pROC, PRROC, ggplot2, utils
+Suggests: doParallel, knitr, rmarkdown
+RoxygenNote: 7.1.1
+NeedsCompilation: no
+Packaged: 2021-08-25 21:06:17 UTC; ZhangWB

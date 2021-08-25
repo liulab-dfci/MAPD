@@ -1,0 +1,111 @@
+---
+title: "Model-based Analysis of Protein Degradability"
+author: "Wubing Zhang"
+date: "`r Sys.Date()`"
+output: html_document
+vignette: >
+  %\VignetteIndexEntry{MAPD.Rmd}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+  
+abstract: >
+  Targeted protein degradation (TPD) has rapidly emerged as a therapeutic modality to eliminate previously undruggable proteins by repurposing the cell’s endogenous protein degradation machinery. However, development of TPD compounds is largely driven by trial-and-error. Recent systematic studies to map the degradable kinome have shown dramatic differences in degradation between kinases with similar drug-target engagement, suggesting unexplained factors influencing degradability. We therefore developed a machine learning model, MAPD (Model-based Analysis of Protein Degradability), to predict degradability from protein features that encompass post-translational modifications, protein stability, protein expression and protein-protein interactions. MAPD shows promising performance in predicting kinases that are degradable by TPD compounds (auPRC=0.759) and is likely generalizable to independent non-kinase proteins. We found 5 features to achieve optimal performance, with ubiquitination potential being the most highly predictive. By structural modelling, we found that E2-accessible ubiquitination sites, but not lysine residues in general, are particularly associated with kinase degradability. 
+  Here, we implement the R package MAPD, which enable users to re-train the MAPD model and predict proteome-wide degradability.
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Install required packages
+```{r install, eval=FALSE}
+BiocManager::install(c("caret", "doParallel", "pROC", "PRROC"))
+devtools::install_github("WubingZhang/MAPD")
+```
+
+## Load required packages
+```{r lib}
+suppressPackageStartupMessages(library(doParallel))
+suppressPackageStartupMessages(library(caret))
+suppressPackageStartupMessages(library(MAPD))
+```
+
+## Load data
+```{r load}
+# Load feature data
+data("featureDat", package = "MAPD")
+# Load kinases for training
+data("ProteinsForTrain", package = "MAPD")
+
+# You can also load your own data.
+# featureDat: a matrix or a data frame, each row represents a gene/protein, each column represents a feature.
+# ProteinsForTrain: a factor or a vector, specifying genes/proteins with high or low degradability for training the model. The names of the `ProteinsForTrain` should match the row names of `featureDat`.
+```
+
+## Select features for predicting protein degradability
+
+```{r select}
+# Parallel Processing
+cl <- makePSOCKcluster(4)
+registerDoParallel(cl)
+# define the control using a random forest selection function
+control <- rfeControl(functions=rfFuncs, method = "LOOCV")
+# run the RFE algorithm
+results <- rfe(featureDat[names(ProteinsForTrain), ], ProteinsForTrain,
+               sizes=seq(2,10,2), rfeControl=control)
+# summarize the results
+print(results)
+# plot the results
+plot(results, type=c("g", "o"))
+stopCluster(cl)
+
+# In the MAPD manuscript, we used forward feature selection and seleted five important features for predicting degradability, including Ubiquitination_2, Phosphorylation_2, Acetylation_1, Length, Zecha2018_Hela_Halflife
+```
+
+## Train a random forest model for predicting protein degradability
+```{r train}
+# Using default setting: built-in feature data and pre-selected features
+cl <- makePSOCKcluster(4); registerDoParallel(cl) # Parallel Processing
+MAPD = MAPD.train(class = ProteinsForTrain) # ntree = 20000
+
+# You can also use the optimal feature set selected by rfe (recursive feature elimination) in previous step.
+MAPD = MAPD.train(class = ProteinsForTrain, features = results$optVariables, ntree = 100)
+stopCluster(cl) # Close the parallel cluster 
+```
+
+## Evaluate the performance of the final model using cross-validation
+```{r evaluate}
+# You can load pre-trained model using:
+# data("MAPD", package = "MAPD")
+cl <- makePSOCKcluster(4); registerDoParallel(cl) # Parallel Processing
+prc = MAPD.CV(MAPD, metric = "PRC") # Precison-Recall Curve
+PRC.plot(prc)
+roc = MAPD.CV(MAPD, metric = "ROC") # ROC Curve
+ROC.plot(roc)
+stopCluster(cl) # Close the parallel cluster 
+```
+
+## Use MAPD to predict proteome-wide degradability
+```{r predict}
+# You can load pre-trained model using:
+# data("MAPD", package = "MAPD")
+cl <- makePSOCKcluster(4); registerDoParallel(cl) # Parallel Processing
+
+# Predict proteome-wide degradability
+preds = predict.train(MAPD, newdata = featureDat, type = "prob")
+preds = preds[order(-preds[,1]), ]
+head(preds)
+
+# Collect predictions from cross-validation
+preds_cv = MAPD.CV(MAPD, out = "pred")
+head(sort(preds_cv, decreasing = TRUE))
+
+# Update the predictions for proteins in the training
+preds[rownames(preds_cv), 1] = preds_cv
+preds[rownames(preds_cv), 2] = 1-preds_cv
+stopCluster(cl) # Close the parallel cluster 
+```
+
+
+
