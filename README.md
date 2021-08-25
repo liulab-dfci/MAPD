@@ -12,4 +12,10 @@ Install this package via github using the `devtools` package.
 > devtools::install_github('WubingZhang/MAPD')
 ```
 
+## Citation
 
+Wubing Zhang, 
+
+## Contacts
+* Wubing Zhang (wzhang@ds.dfci.harvard.edu)
+* X. Shirley Liu (xsliu@ds.dfci.harvard.edu)
