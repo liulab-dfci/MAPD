@@ -2,7 +2,8 @@
 title: "Model-based Analysis of Protein Degradability"
 author: "Wubing Zhang"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  BiocStyle::html_document
 vignette: >
   %\VignetteIndexEntry{MAPD.Rmd}
   %\VignetteEngine{knitr::rmarkdown}
@@ -70,6 +71,7 @@ cl <- makePSOCKcluster(4); registerDoParallel(cl) # Parallel Processing
 MAPD = MAPD.train(class = ProteinsForTrain) # ntree = 20000
 
 # You can also use the optimal feature set selected by rfe (recursive feature elimination) in previous step.
+# To make it fast, we train a random forest model with 100 trees.
 MAPD = MAPD.train(class = ProteinsForTrain, features = results$optVariables, ntree = 100)
 stopCluster(cl) # Close the parallel cluster 
 ```
@@ -78,10 +80,11 @@ stopCluster(cl) # Close the parallel cluster
 ```{r evaluate}
 # You can load pre-trained model using:
 # data("MAPD", package = "MAPD")
-cl <- makePSOCKcluster(4); registerDoParallel(cl) # Parallel Processing
-prc = MAPD.CV(MAPD, metric = "PRC") # Precison-Recall Curve
+cl <- makePSOCKcluster(8); registerDoParallel(cl) # Parallel Processing
+# To make it fast, we did 5-fold cross validation in the document.
+prc = MAPD.CV(MAPD, metric = "PRC", fold = 5) # Precison-Recall Curve
 PRC.plot(prc)
-roc = MAPD.CV(MAPD, metric = "ROC") # ROC Curve
+roc = MAPD.CV(MAPD, metric = "ROC", fold = 5) # ROC Curve
 ROC.plot(roc)
 stopCluster(cl) # Close the parallel cluster 
 ```

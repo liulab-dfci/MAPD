@@ -5,13 +5,20 @@ Version: 1.0.0
 Author: Wubing Zhang
 Maintainer: Wubing Zhang <watson5bzhang@gmail.com>
 Description: MAPD predicts protein degradability from protein intrinsic features (e.g. ubiquitination potential).
-License: GPL (>=3)
+License: GPL (>=3.5)
+URL: https://MAPD.WubingZhang.org, https://github.com/WubingZhang/MAPD, http://mapd.cistrome.org/
+BugReports: https://github.com/WubingZhang/MAPD/issues
 VignetteBuilder: knitr
 Encoding: UTF-8
 LazyData: true
-Depends: R (>= 3.5)
-Imports: caret, pROC, PRROC, ggplot2, utils
-Suggests: doParallel, knitr, rmarkdown
+Depends: R (>= 4.0)
+Imports: caret, 
+         pROC,
+         PRROC,
+         ggplot2,
+         utils
+Suggests: doParallel,
+          knitr,
+          rmarkdown,
+          BiocStyle
 RoxygenNote: 7.1.1
-NeedsCompilation: no
-Packaged: 2021-08-25 21:06:17 UTC; ZhangWB
