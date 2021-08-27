@@ -6,9 +6,9 @@ Here, we designed R package MAPD to make it quick and easy to：
 
 * Reproduce our MAPD model for benchmarking
 * Investigate protein features predictive of protein degradability
-* Extend the MAPD model by incorporating new protein degradability data and/or protein feature data.
+* Extend the MAPD model by incorporating new protein degradability data and/or protein feature data
 
-For more detail, please visit https://wubingzhang.github.io/MAPD/articles/MAPD.html
+For more detail, please visit https://wubingzhang.github.io/MAPD/articles/MAPD.html.
 
 # Installation
 Install this package via github using the `devtools` package.
