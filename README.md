@@ -1,9 +1,14 @@
 # Model-based Analysis of Protein Degradability
 
-Targeted protein degradation (TPD) has rapidly emerged as a therapeutic modality to eliminate previously undruggable proteins through hijacking the cell’s endogenous protein degradation machinery. However, development of TPD compounds is largely driven by trial-and-error. Recent systematic TPD studies of the kinome have shown dramatic differences in degradation between kinases with otherwise similar drug-target engagement, suggesting unexplained factors influencing degradability. We therefore developed a machine learning model, MAPD (Model-based Analysis of Protein Degradability), to predict degradability from protein features that encompass post-translational modifications, protein stability, protein expression and protein-protein interactions. We found 5 features to achieve optimal performance of MAPD, with ubiquitination rate being the most highly predictive. Here, we implement the R package MAPD, which enable users to re-train the MAPD model, compare the new model with old model based on cross-validation, and predict proteome-wide degradability. Furthermore, we include ligand availability data and disease association data of proteins for prioritizing TPD targets.
+Targeted protein degradation (TPD) has rapidly emerged as a therapeutic modality to eliminate previously undruggable proteins through repurposing the cell’s endogenous protein degradation machinery. However, development of TPD compounds is largely driven by trial-and-error. We developed a machine learning model, MAPD (Model-based Analysis of Protein Degradability), to predict degradability from protein-intrinsic features that encompass post-translational modifications, protein stability, protein expression and protein-protein interactions. MAPD shows promising performance in predicting kinases that are degradable by TPD compounds and is likely generalizable to independent non-kinase proteins.
 
-# Documentation
-Please visit https://wubingzhang.github.io/MAPD/ or http://cistrome.org/~wubing/MAPD.html.
+Here, we designed R package MAPD to make it quick and easy to：
+
+* Reproduce our MAPD model for benchmarking
+* Investigate protein features predictive of protein degradability
+* Extend the MAPD model by incorporating new protein degradability data and/or protein feature data.
+
+For more detail, please visit https://wubingzhang.github.io/MAPD/articles/MAPD.html
 
 # Installation
 Install this package via github using the `devtools` package.

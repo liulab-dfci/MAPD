@@ -79,7 +79,7 @@
       <h1 data-toc-skip>Model-based Analysis of Protein Degradability</h1>
                         <h4 class="author">Wubing Zhang</h4>
             
-            <h4 class="date">2021-08-25</h4>
+            <h4 class="date">2021-08-26</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/WubingZhang/MAPD/blob/master/vignettes/MAPD.Rmd"><code>vignettes/MAPD.Rmd</code></a></small>
       <div class="hidden name"><code>MAPD.Rmd</code></div>
@@ -87,153 +87,178 @@
     </div>
 
     
-        <div class="abstract">
-      <p class="abstract">Abstract</p>
-      <p>Targeted protein degradation (TPD) has rapidly emerged as a therapeutic modality to eliminate previously undruggable proteins by repurposing the cell’s endogenous protein degradation machinery. However, development of TPD compounds is largely driven by trial-and-error. Recent systematic studies to map the degradable kinome have shown dramatic differences in degradation between kinases with similar drug-target engagement, suggesting unexplained factors influencing degradability. We therefore developed a machine learning model, MAPD (Model-based Analysis of Protein Degradability), to predict degradability from protein features that encompass post-translational modifications, protein stability, protein expression and protein-protein interactions. MAPD shows promising performance in predicting kinases that are degradable by TPD compounds (auPRC=0.759) and is likely generalizable to independent non-kinase proteins. We found 5 features to achieve optimal performance, with ubiquitination potential being the most highly predictive. By structural modelling, we found that E2-accessible ubiquitination sites, but not lysine residues in general, are particularly associated with kinase degradability. Here, we implement the R package MAPD, which enable users to re-train the MAPD model and predict proteome-wide degradability.</p>
-    </div>
     
-<div id="install-required-packages" class="section level2">
+<div id="introduction" class="section level2">
 <h2 class="hasAnchor">
-<a href="#install-required-packages" class="anchor"></a>Install required packages</h2>
+<a href="#introduction" class="anchor"></a>Introduction</h2>
+<p>MAPD (Model-based Analysis of Protein Degradability) is random forest model designed for predicting tractable targets of protein degraders. Here, we developed a R package, which enables users to:</p>
+<ul>
+<li>Reproduce our MAPD model for benchmarking</li>
+<li>Investigate protein features predictive of protein degradability</li>
+<li>Extend the MAPD model by incorporating new protein degradability data and/or protein feature data</li>
+</ul>
+</div>
+<div id="installation" class="section level2">
+<h2 class="hasAnchor">
+<a href="#installation" class="anchor"></a>Installation</h2>
+<div id="install-required-packages" class="section level3">
+<h3 class="hasAnchor">
+<a href="#install-required-packages" class="anchor"></a>Install required packages</h3>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">BiocManager</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/BiocManager/man/install.html">install</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"caret"</span>, <span class="st">"doParallel"</span>, <span class="st">"pROC"</span>, <span class="st">"PRROC"</span><span class="op">)</span><span class="op">)</span>
 <span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org//reference/remote-reexports.html">install_github</a></span><span class="op">(</span><span class="st">"WubingZhang/MAPD"</span><span class="op">)</span></code></pre></div>
 </div>
-<div id="load-required-packages" class="section level2">
-<h2 class="hasAnchor">
-<a href="#load-required-packages" class="anchor"></a>Load required packages</h2>
+<div id="load-required-packages" class="section level3">
+<h3 class="hasAnchor">
+<a href="#load-required-packages" class="anchor"></a>Load required packages</h3>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/message.html">suppressPackageStartupMessages</a></span><span class="op">(</span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">doParallel</span><span class="op">)</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/base/message.html">suppressPackageStartupMessages</a></span><span class="op">(</span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/topepo/caret/">caret</a></span><span class="op">)</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/base/message.html">suppressPackageStartupMessages</a></span><span class="op">(</span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://MAPD.WubingZhang.org">MAPD</a></span><span class="op">)</span><span class="op">)</span></code></pre></div>
 </div>
-<div id="load-data" class="section level2">
+</div>
+<div id="benchmarking" class="section level2">
 <h2 class="hasAnchor">
-<a href="#load-data" class="anchor"></a>Load data</h2>
+<a href="#benchmarking" class="anchor"></a>Benchmarking</h2>
+<div id="build-models-for-comparison" class="section level3">
+<h3 class="hasAnchor">
+<a href="#build-models-for-comparison" class="anchor"></a>Build models for comparison</h3>
+<p>The MAPD model predicts protein degradability based on five protein-intrinsic features, including in order of importance: ubiquitination potential, phosphorylation potential, protein half-life, acetylation potential and protein length. You can build new models and compare their performance.</p>
+<div id="load-pre-trained-mapd-model" class="section level4">
+<h4 class="hasAnchor">
+<a href="#load-pre-trained-mapd-model" class="anchor"></a>Load pre-trained MAPD model</h4>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="st">"MAPD"</span>, package <span class="op">=</span> <span class="st">"MAPD"</span><span class="op">)</span></code></pre></div>
+</div>
+<div id="train-a-new-model" class="section level4">
+<h4 class="hasAnchor">
+<a href="#train-a-new-model" class="anchor"></a>Train a new model</h4>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu">makePSOCKcluster</span><span class="op">(</span><span class="fl">16</span><span class="op">)</span>; <span class="fu"><a href="https://rdrr.io/pkg/doParallel/man/registerDoParallel.html">registerDoParallel</a></span><span class="op">(</span><span class="va">cl</span><span class="op">)</span> <span class="co"># Parallel Processing</span>
+<span class="co"># Load feature data</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="st">"featureDat"</span>, package <span class="op">=</span> <span class="st">"MAPD"</span><span class="op">)</span>
+<span class="co"># Load kinase degradability labels</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="st">"ProteinsForTrain"</span>, package <span class="op">=</span> <span class="st">"MAPD"</span><span class="op">)</span>
+<span class="co"># Use buid-in data or customized data to train a new model (not run)</span>
+<span class="va">MAPD.new</span> <span class="op">=</span> <span class="fu"><a href="../reference/MAPD.train.html">MAPD.train</a></span><span class="op">(</span>class <span class="op">=</span> <span class="va">ProteinsForTrain</span>, featureDat <span class="op">=</span> <span class="va">featureDat</span>, features <span class="op">=</span> <span class="va">results</span><span class="op">$</span><span class="va">optVariables</span><span class="op">)</span>
+<span class="fu">stopCluster</span><span class="op">(</span><span class="va">cl</span><span class="op">)</span> <span class="co"># Close the parallel cluster </span></code></pre></div>
+</div>
+</div>
+<div id="evaluate-the-performance-of-the-final-model-based-on-cross-validation" class="section level3">
+<h3 class="hasAnchor">
+<a href="#evaluate-the-performance-of-the-final-model-based-on-cross-validation" class="anchor"></a>Evaluate the performance of the final model based on cross-validation</h3>
+<p>The <code>MAPD.CV</code> function allows users to perform cross-validation, collect prediction scores of proteins in each fold, and finally evaluate the performance based on the prediction scores of all training proteins.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># Comparing `MAPD` and `MAPD.new` based on cross-validation (not run)</span>
+<span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu">makePSOCKcluster</span><span class="op">(</span><span class="fl">16</span><span class="op">)</span>; <span class="fu"><a href="https://rdrr.io/pkg/doParallel/man/registerDoParallel.html">registerDoParallel</a></span><span class="op">(</span><span class="va">cl</span><span class="op">)</span> <span class="co"># Parallel Processing</span>
+<span class="co"># Precison-Recall Curve</span>
+<span class="va">prc_1</span> <span class="op">=</span> <span class="fu"><a href="../reference/MAPD.CV.html">MAPD.CV</a></span><span class="op">(</span><span class="va">MAPD</span>, metric <span class="op">=</span> <span class="st">"PRC"</span><span class="op">)</span> 
+<span class="va">prc_2</span> <span class="op">=</span> <span class="fu"><a href="../reference/MAPD.CV.html">MAPD.CV</a></span><span class="op">(</span><span class="va">MAPD.new</span>, metric <span class="op">=</span> <span class="st">"PRC"</span><span class="op">)</span>
+<span class="fu"><a href="../reference/PRC.plot.html">PRC.plot</a></span><span class="op">(</span>prcList <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>MAPD <span class="op">=</span> <span class="va">prc_1</span>, MAPD.new <span class="op">=</span> <span class="va">MAPD.new</span><span class="op">)</span><span class="op">)</span>
+
+<span class="co"># ROC Curve</span>
+<span class="va">roc_1</span> <span class="op">=</span> <span class="fu"><a href="../reference/MAPD.CV.html">MAPD.CV</a></span><span class="op">(</span><span class="va">MAPD</span>, metric <span class="op">=</span> <span class="st">"ROC"</span><span class="op">)</span>
+<span class="va">roc_2</span> <span class="op">=</span> <span class="fu"><a href="../reference/MAPD.CV.html">MAPD.CV</a></span><span class="op">(</span><span class="va">MAPD.new</span>, metric <span class="op">=</span> <span class="st">"ROC"</span><span class="op">)</span>
+<span class="fu"><a href="../reference/ROC.plot.html">ROC.plot</a></span><span class="op">(</span>rocList <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>MAPD <span class="op">=</span> <span class="va">roc_1</span>, MAPD.new <span class="op">=</span> <span class="va">MAPD.new</span><span class="op">)</span><span class="op">)</span>
+<span class="fu">stopCluster</span><span class="op">(</span><span class="va">cl</span><span class="op">)</span> <span class="co"># Close the parallel cluster </span></code></pre></div>
+</div>
+</div>
+<div id="investigating-features-associated-with-protein-degradability" class="section level2">
+<h2 class="hasAnchor">
+<a href="#investigating-features-associated-with-protein-degradability" class="anchor"></a>Investigating features associated with protein degradability</h2>
+<p>With extensive proteomic profiling of protein degradability and protein features, you can further explore protein features predictive of degradability and develop a model to predict proteome-wide degradability.</p>
+<div id="load-build-in-data" class="section level3">
+<h3 class="hasAnchor">
+<a href="#load-build-in-data" class="anchor"></a>Load build-in data</h3>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># Load feature data</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="st">"featureDat"</span>, package <span class="op">=</span> <span class="st">"MAPD"</span><span class="op">)</span>
-<span class="co"># Load kinases for training</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">featureDat</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span><span class="op">)</span></code></pre></div>
+<pre><code>##       Length  ArgRatio   LysRatio   SerRatio   ThrRatio
+## H3C1     136 0.1323529 0.09558824 0.03676471 0.07352941
+## H3C10    136 0.1323529 0.09558824 0.03676471 0.07352941
+## H3C11    136 0.1323529 0.09558824 0.03676471 0.07352941
+## H3C12    136 0.1323529 0.09558824 0.03676471 0.07352941
+## H3C2     136 0.1323529 0.09558824 0.03676471 0.07352941
+## H3C3     136 0.1323529 0.09558824 0.03676471 0.07352941</code></pre>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># Load kinase degradability labels</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="st">"ProteinsForTrain"</span>, package <span class="op">=</span> <span class="st">"MAPD"</span><span class="op">)</span>
-
-<span class="co"># You can also load your own data.</span>
-<span class="co"># featureDat: a matrix or a data frame, each row represents a gene/protein, each column represents a feature.</span>
-<span class="co"># ProteinsForTrain: a factor or a vector, specifying genes/proteins with high or low degradability for training the model. The names of the `ProteinsForTrain` should match the row names of `featureDat`.</span></code></pre></div>
+<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">ProteinsForTrain</span><span class="op">)</span></code></pre></div>
+<pre><code>## ACVR1B  BRSK1  BRSK2 CAMK1D CAMK2D CAMKK2 
+##    low    low    low    low    low    low 
+## Levels: low high</code></pre>
 </div>
-<div id="select-features-for-predicting-protein-degradability" class="section level2">
-<h2 class="hasAnchor">
-<a href="#select-features-for-predicting-protein-degradability" class="anchor"></a>Select features for predicting protein degradability</h2>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div id="incorporate-new-data" class="section level3">
+<h3 class="hasAnchor">
+<a href="#incorporate-new-data" class="anchor"></a>Incorporate new data</h3>
+<p>You can incorporate new feature data and/or increased protein degradability data into downstream analysis. The data format should be the same as the build-in data.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># ?featureDat: a matrix or a data frame, each row represents a gene/protein, each column represents a feature.</span>
+<span class="co"># ?ProteinsForTrain: a factor or a vector, specifying genes/proteins with high or low degradability for training the model. The names of the `ProteinsForTrain`  match the row names of `featureDat`.</span></code></pre></div>
+</div>
+<div id="feature-selection" class="section level3">
+<h3 class="hasAnchor">
+<a href="#feature-selection" class="anchor"></a>Feature selection</h3>
+<p>Based on the new feature data and/or customized protein degradability data, you can investigate features predictive of protein degradability by performing feature selection using the function <code><a href="https://rdrr.io/pkg/caret/man/rfe.html">caret::rfe</a></code>.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># Parallel Processing</span>
-<span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu">makePSOCKcluster</span><span class="op">(</span><span class="fl">4</span><span class="op">)</span>
+<span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu">makePSOCKcluster</span><span class="op">(</span><span class="fl">16</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/pkg/doParallel/man/registerDoParallel.html">registerDoParallel</a></span><span class="op">(</span><span class="va">cl</span><span class="op">)</span>
 <span class="co"># define the control using a random forest selection function</span>
-<span class="va">control</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/caret/man/rfeControl.html">rfeControl</a></span><span class="op">(</span>functions<span class="op">=</span><span class="va">rfFuncs</span>, method <span class="op">=</span> <span class="st">"LOOCV"</span><span class="op">)</span>
-<span class="co"># run the RFE algorithm</span>
+<span class="va">control</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/caret/man/rfeControl.html">rfeControl</a></span><span class="op">(</span>functions<span class="op">=</span><span class="va">rfFuncs</span>, method <span class="op">=</span> <span class="st">"cv"</span>, number <span class="op">=</span> <span class="fl">20</span><span class="op">)</span>
+<span class="co"># rfe (recursive feature elimination) </span>
 <span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/caret/man/rfe.html">rfe</a></span><span class="op">(</span><span class="va">featureDat</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">ProteinsForTrain</span><span class="op">)</span>, <span class="op">]</span>, <span class="va">ProteinsForTrain</span>,
                sizes<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">10</span>,<span class="fl">2</span><span class="op">)</span>, rfeControl<span class="op">=</span><span class="va">control</span><span class="op">)</span>
 <span class="co"># summarize the results</span>
-<span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></code></pre></div>
-<pre><code>## 
-## Recursive feature selection
-## 
-## Outer resampling method: Leave-One-Out Cross-Validation 
-## 
-## Resampling performance over subset size:
-## 
-##  Variables Accuracy   Kappa Selected
-##          2   0.5873 0.08797         
-##          4   0.6111 0.17921         
-##          6   0.6190 0.19317         
-##          8   0.6032 0.14169         
-##         10   0.6508 0.23930        *
-##         51   0.6508 0.21695         
-## 
-## The top 5 variables (out of 10):
-##    Ubiquitination_2, Zecha2018_Hela_Halflife, Mathieson2018_Hepatocytes_Halflife, TyrRatio, Nterminome</code></pre>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># plot the results</span>
-<span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">results</span>, type<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"g"</span>, <span class="st">"o"</span><span class="op">)</span><span class="op">)</span></code></pre></div>
-<p><img src="MAPD_files/figure-html/select-1.png" width="700"></p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">stopCluster</span><span class="op">(</span><span class="va">cl</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span>
+<span class="co"># plot the results</span>
+<span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">results</span>, type<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"g"</span>, <span class="st">"o"</span><span class="op">)</span><span class="op">)</span>
+<span class="fu">stopCluster</span><span class="op">(</span><span class="va">cl</span><span class="op">)</span>
 
-<span class="co"># In the MAPD manuscript, we used forward feature selection and seleted five important features for predicting degradability, including Ubiquitination_2, Phosphorylation_2, Acetylation_1, Length, Zecha2018_Hela_Halflife</span></code></pre></div>
+<span class="co"># In the MAPD manuscript, we performed forward feature selection and seleted five important features for predicting degradability, including Ubiquitination_2, Phosphorylation_2, Acetylation_1, Length, Zecha2018_Hela_Halflife. </span></code></pre></div>
 </div>
-<div id="train-a-random-forest-model-for-predicting-protein-degradability" class="section level2">
-<h2 class="hasAnchor">
-<a href="#train-a-random-forest-model-for-predicting-protein-degradability" class="anchor"></a>Train a random forest model for predicting protein degradability</h2>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># Using default setting: built-in feature data and pre-selected features</span>
-<span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu">makePSOCKcluster</span><span class="op">(</span><span class="fl">4</span><span class="op">)</span>; <span class="fu"><a href="https://rdrr.io/pkg/doParallel/man/registerDoParallel.html">registerDoParallel</a></span><span class="op">(</span><span class="va">cl</span><span class="op">)</span> <span class="co"># Parallel Processing</span>
-<span class="va">MAPD</span> <span class="op">=</span> <span class="fu"><a href="../reference/MAPD.train.html">MAPD.train</a></span><span class="op">(</span>class <span class="op">=</span> <span class="va">ProteinsForTrain</span><span class="op">)</span> <span class="co"># ntree = 20000</span></code></pre></div>
-<pre><code>## 2021-08-25 19:51:44 Features used for training: Ubiquitination_2, Phosphorylation_2, Acetylation_1, Zecha2018_Hela_Halflife, Length</code></pre>
-<pre><code>## 2021-08-25 19:51:44 126 proteins and 5 features are included in the training data</code></pre>
-<pre><code>## 2021-08-25 19:51:44 Start training ...</code></pre>
-<pre><code>## note: only 4 unique complexity parameters in default grid. Truncating the grid to 4 .</code></pre>
-<pre><code>## 2021-08-25 20:01:34 Return the final model ...</code></pre>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># You can also use the optimal feature set selected by rfe (recursive feature elimination) in previous step.</span>
-<span class="co"># To make it fast, we train a random forest model with 100 trees.</span>
-<span class="va">MAPD</span> <span class="op">=</span> <span class="fu"><a href="../reference/MAPD.train.html">MAPD.train</a></span><span class="op">(</span>class <span class="op">=</span> <span class="va">ProteinsForTrain</span>, features <span class="op">=</span> <span class="va">results</span><span class="op">$</span><span class="va">optVariables</span>, ntree <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></code></pre></div>
-<pre><code>## 2021-08-25 20:01:34 Features used for training: Ubiquitination_2, Zecha2018_Hela_Halflife, Mathieson2018_Hepatocytes_Halflife, TyrRatio, Nterminome, Phosphorylation_2, Ubiquitination_1, MOLT4_RNA, nInteract, Boisvert2012_Hela_Cytoplasm_Turnover</code></pre>
-<pre><code>## 2021-08-25 20:01:34 126 proteins and 10 features are included in the training data</code></pre>
-<pre><code>## 2021-08-25 20:01:34 Start training ...</code></pre>
-<pre><code>## 2021-08-25 20:01:42 Return the final model ...</code></pre>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">stopCluster</span><span class="op">(</span><span class="va">cl</span><span class="op">)</span> <span class="co"># Close the parallel cluster </span></code></pre></div>
 </div>
-<div id="evaluate-the-performance-of-the-final-model-using-cross-validation" class="section level2">
+<div id="extending-the-mapd-model-for-predicting-protein-degradability" class="section level2">
 <h2 class="hasAnchor">
-<a href="#evaluate-the-performance-of-the-final-model-using-cross-validation" class="anchor"></a>Evaluate the performance of the final model using cross-validation</h2>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># You can load pre-trained model using:</span>
-<span class="co"># data("MAPD", package = "MAPD")</span>
-<span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu">makePSOCKcluster</span><span class="op">(</span><span class="fl">8</span><span class="op">)</span>; <span class="fu"><a href="https://rdrr.io/pkg/doParallel/man/registerDoParallel.html">registerDoParallel</a></span><span class="op">(</span><span class="va">cl</span><span class="op">)</span> <span class="co"># Parallel Processing</span>
-<span class="co"># To make it fast, we did 5-fold cross validation in the document.</span>
-<span class="va">prc</span> <span class="op">=</span> <span class="fu"><a href="../reference/MAPD.CV.html">MAPD.CV</a></span><span class="op">(</span><span class="va">MAPD</span>, metric <span class="op">=</span> <span class="st">"PRC"</span>, fold <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="co"># Precison-Recall Curve</span>
-<span class="fu"><a href="../reference/PRC.plot.html">PRC.plot</a></span><span class="op">(</span><span class="va">prc</span><span class="op">)</span></code></pre></div>
-<p><img src="MAPD_files/figure-html/evaluate-1.png" width="700"></p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">roc</span> <span class="op">=</span> <span class="fu"><a href="../reference/MAPD.CV.html">MAPD.CV</a></span><span class="op">(</span><span class="va">MAPD</span>, metric <span class="op">=</span> <span class="st">"ROC"</span>, fold <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="co"># ROC Curve</span></code></pre></div>
-<pre><code>## Setting levels: control = high, case = low</code></pre>
-<pre><code>## Setting direction: controls &gt; cases</code></pre>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/ROC.plot.html">ROC.plot</a></span><span class="op">(</span><span class="va">roc</span><span class="op">)</span></code></pre></div>
-<p><img src="MAPD_files/figure-html/evaluate-2.png" width="700"></p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">stopCluster</span><span class="op">(</span><span class="va">cl</span><span class="op">)</span> <span class="co"># Close the parallel cluster </span></code></pre></div>
+<a href="#extending-the-mapd-model-for-predicting-protein-degradability" class="anchor"></a>Extending the MAPD model for predicting protein degradability</h2>
+<p>With the newly-selected features, you can use the <code>MAPD.train</code> function to train a final model for predicting protein degradability.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># You can input your own protein degradability labels and protein feature data to train a new model (not run)</span>
+<span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu">makePSOCKcluster</span><span class="op">(</span><span class="fl">16</span><span class="op">)</span>; <span class="fu"><a href="https://rdrr.io/pkg/doParallel/man/registerDoParallel.html">registerDoParallel</a></span><span class="op">(</span><span class="va">cl</span><span class="op">)</span> <span class="co"># Parallel Processing</span>
+<span class="va">MAPD</span> <span class="op">=</span> <span class="fu"><a href="../reference/MAPD.train.html">MAPD.train</a></span><span class="op">(</span>class <span class="op">=</span> <span class="va">ProteinsForTrain</span>, featureDat <span class="op">=</span> <span class="va">featureDat</span>, features <span class="op">=</span> <span class="va">results</span><span class="op">$</span><span class="va">optVariables</span><span class="op">)</span>
+<span class="fu">stopCluster</span><span class="op">(</span><span class="va">cl</span><span class="op">)</span> <span class="co"># Close the parallel cluster </span></code></pre></div>
 </div>
-<div id="use-mapd-to-predict-proteome-wide-degradability" class="section level2">
+<div id="predicting-proteome-wide-degradability" class="section level2">
 <h2 class="hasAnchor">
-<a href="#use-mapd-to-predict-proteome-wide-degradability" class="anchor"></a>Use MAPD to predict proteome-wide degradability</h2>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># You can load pre-trained model using:</span>
-<span class="co"># data("MAPD", package = "MAPD")</span>
-<span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu">makePSOCKcluster</span><span class="op">(</span><span class="fl">4</span><span class="op">)</span>; <span class="fu"><a href="https://rdrr.io/pkg/doParallel/man/registerDoParallel.html">registerDoParallel</a></span><span class="op">(</span><span class="va">cl</span><span class="op">)</span> <span class="co"># Parallel Processing</span>
-
-<span class="co"># Predict proteome-wide degradability</span>
+<a href="#predicting-proteome-wide-degradability" class="anchor"></a>Predicting proteome-wide degradability</h2>
+<p>You can see our predictions of proteome-wide degradability at <a href="http://mapd.cistrome.org/" class="uri">http://mapd.cistrome.org/</a>.</p>
+<div id="predict-degradability-using-the-final-model" class="section level3">
+<h3 class="hasAnchor">
+<a href="#predict-degradability-using-the-final-model" class="anchor"></a>Predict degradability using the final model</h3>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># (not run)</span>
 <span class="va">preds</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/caret/man/predict.train.html">predict.train</a></span><span class="op">(</span><span class="va">MAPD</span>, newdata <span class="op">=</span> <span class="va">featureDat</span>, type <span class="op">=</span> <span class="st">"prob"</span><span class="op">)</span>
 <span class="va">preds</span> <span class="op">=</span> <span class="va">preds</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html">order</a></span><span class="op">(</span><span class="op">-</span><span class="va">preds</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span><span class="op">)</span>, <span class="op">]</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">preds</span><span class="op">)</span></code></pre></div>
-<pre><code>##       high  low
-## AURKB 0.99 0.01
-## GRB2  0.98 0.02
-## GSK3B 0.98 0.02
-## CDK2  0.96 0.04
-## CDK1  0.95 0.05
-## PBK   0.95 0.05</code></pre>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># Collect predictions from cross-validation</span>
+</div>
+<div id="collect-predictions-from-cross-validation" class="section level3">
+<h3 class="hasAnchor">
+<a href="#collect-predictions-from-cross-validation" class="anchor"></a>Collect predictions from cross-validation</h3>
+<p>For proteins included in the training, we recommend collecting their prediction scores from cross-validation.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># (not run)</span>
+<span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu">makePSOCKcluster</span><span class="op">(</span><span class="fl">4</span><span class="op">)</span>; <span class="fu"><a href="https://rdrr.io/pkg/doParallel/man/registerDoParallel.html">registerDoParallel</a></span><span class="op">(</span><span class="va">cl</span><span class="op">)</span> <span class="co"># Parallel Processing</span>
+
+<span class="co"># Collect predictions from cross-validation</span>
 <span class="va">preds_cv</span> <span class="op">=</span> <span class="fu"><a href="../reference/MAPD.CV.html">MAPD.CV</a></span><span class="op">(</span><span class="va">MAPD</span>, out <span class="op">=</span> <span class="st">"pred"</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html">sort</a></span><span class="op">(</span><span class="va">preds_cv</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></code></pre></div>
-<pre><code>##  CDK9  CDK2 GSK3B AURKB CDK16   TTK 
-##  0.95  0.92  0.91  0.90  0.84  0.83</code></pre>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># Update the predictions for proteins in the training</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html">sort</a></span><span class="op">(</span><span class="va">preds_cv</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span>
+
+<span class="co"># Update the predictions for proteins in the training</span>
 <span class="va">preds</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html">rownames</a></span><span class="op">(</span><span class="va">preds_cv</span><span class="op">)</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">=</span> <span class="va">preds_cv</span>
 <span class="va">preds</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html">rownames</a></span><span class="op">(</span><span class="va">preds_cv</span><span class="op">)</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">=</span> <span class="fl">1</span><span class="op">-</span><span class="va">preds_cv</span>
 <span class="fu">stopCluster</span><span class="op">(</span><span class="va">cl</span><span class="op">)</span> <span class="co"># Close the parallel cluster </span></code></pre></div>
+</div>
 </div>
   </div>
 

@@ -5,7 +5,7 @@
 \title{Train a random forest model (MAPD) for predicting protein degradability.}
 \usage{
 MAPD.train(
-  class,
+  class = NULL,
   featureDat = NULL,
   features = NULL,
   ntree = 20000,
@@ -16,7 +16,7 @@ MAPD.train(
 \arguments{
 \item{class}{A vector or factor, indicating the class label of proteins for training.
 The vector or factor should be named with official gene names. The first-level items will be
-considered as negative (e.g. 0), and the others will be positive (e.g. 1).}
+considered as negative (e.g. lowly-degradable), and the others will be positive (e.g. highly-degradable).}
 
 \item{featureDat}{A matrix or data frame, specifying the user-defined protein feature data.
 By default, this function will use the internal feature data for training.}

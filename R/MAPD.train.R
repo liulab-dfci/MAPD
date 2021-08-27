@@ -2,7 +2,7 @@
 #'
 #' @param class A vector or factor, indicating the class label of proteins for training.
 #' The vector or factor should be named with official gene names. The first-level items will be
-#' considered as negative (e.g. 0), and the others will be positive (e.g. 1).
+#' considered as negative (e.g. lowly-degradable), and the others will be positive (e.g. highly-degradable).
 #' @param featureDat A matrix or data frame, specifying the user-defined protein feature data.
 #' By default, this function will use the internal feature data for training.
 #' @param features Protein intrinsic features used for predicting degradability.
@@ -18,10 +18,14 @@
 #' @import utils
 #' @export
 #'
-MAPD.train <- function(class, featureDat = NULL, features = NULL, ntree = 20000,
+MAPD.train <- function(class = NULL, featureDat = NULL, features = NULL, ntree = 20000,
                        summaryFunction = caret::prSummary, metric = "AUC"){
   requireNamespace("utils")
   requireNamespace("caret")
+  if(is.null(class)){
+    utils::data("ProteinsForTrain", package = "MAPD", envir = environment())
+    class = ProteinsForTrain
+  }
   if(is.null(featureDat)){
     utils::data("featureDat", package = "MAPD", envir = environment())
   }
