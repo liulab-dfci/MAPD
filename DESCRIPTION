@@ -6,8 +6,7 @@ Author: Wubing Zhang
 Maintainer: Wubing Zhang <watson5bzhang@gmail.com>
 Description: MAPD predicts protein degradability from protein intrinsic features (e.g. ubiquitination potential).
 License: GPL (>=3.5)
-URL: https://MAPD.WubingZhang.org, https://github.com/WubingZhang/MAPD, http://mapd.cistrome.org/
-BugReports: https://github.com/WubingZhang/MAPD/issues
+URL: https://github.com/liulab-dfci/MAPD
 VignetteBuilder: knitr
 Encoding: UTF-8
 LazyData: true

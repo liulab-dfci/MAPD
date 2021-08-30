@@ -8,13 +8,13 @@ Here, we designed R package MAPD to make it quick and easy to：
 * Investigate protein features predictive of protein degradability
 * Extend the MAPD model by incorporating new protein degradability data and/or protein feature data
 
-For more detail, please visit https://wubingzhang.github.io/MAPD/articles/MAPD.html.
+For more detail, please visit https://liulab-dfci.github.io/MAPD/.
 
 # Installation
 Install this package via github using the `devtools` package.
 
 ```R
-> devtools::install_github('WubingZhang/MAPD')
+> devtools::install_github('liulab-dfci/MAPD')
 ```
 
 ## Citation

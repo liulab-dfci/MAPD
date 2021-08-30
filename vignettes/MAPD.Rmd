@@ -26,7 +26,7 @@ MAPD (Model-based Analysis of Protein Degradability) is random forest model desi
 ### Install required packages
 ```{r install, eval=FALSE}
 BiocManager::install(c("caret", "doParallel", "pROC", "PRROC"))
-devtools::install_github("WubingZhang/MAPD")
+devtools::install_github('liulab-dfci/MAPD')
 ```
 
 ### Load required packages
@@ -37,7 +37,7 @@ suppressPackageStartupMessages(library(MAPD))
 ```
 
 
-## Benchmarking
+## Reproducing MAPD for benchmarking
 ### Build models for comparison
 The MAPD model predicts protein degradability based on five protein-intrinsic features, including in order of importance: ubiquitination potential, phosphorylation potential, protein half-life, acetylation potential and protein length. You can build new models and compare their performance.
 
